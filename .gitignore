@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Sphinx
+docs/_build/
+docs/api/generated/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Claude Code
+.claude/
+
+# Kilo Code
+.kilo/
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# Figures
+*.png
+*.pdf
+
+# Temporary
+*.log
+
+# MCMC chains
+chains/
+*.h5
+outputs/
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# pytest
+.pytest_cache/
