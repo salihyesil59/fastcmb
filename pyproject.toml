@@ -9,6 +9,7 @@ description = "An online emulator of Boltzmann codes: CMB spectra in millisecond
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Salih Yeşil" }]
 dependencies = [
     "numpy>=2.0",
