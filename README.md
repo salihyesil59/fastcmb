@@ -7,7 +7,7 @@ time:
 - It predicts the spectra together with the error of that prediction,
   measured in units of `ln L`.
 - If the predicted error is below the tolerance, it returns the
-  prediction. This takes about 10 ms.
+  prediction. This takes about 6 ms.
 - Otherwise it runs the code and adds the point to its training set.
 
 There is nothing to train in advance: the emulator learns while the
@@ -97,7 +97,7 @@ The theory takes every `camb` option and parameter.
 | `min_train` | 30 | points computed by the code before the first fit |
 | `max_train` | 800 | most points fitted on (the latest) |
 | `training_file` | none | keeps the points, so parallel chains and later runs share them |
-| `check_every` | 200 | every N predictions the code runs as well, to measure the error |
+| `check_every` | 200 | after N predictions the code runs as well, to measure the error; the interval doubles while checks pass, up to 10 N |
 
 ## How it works
 
@@ -154,8 +154,20 @@ Accuracy against CAMB, on 60 points drawn from the chain:
 Compared with v0.1 on the same machine:
 
 - Evaluations in the first hour went from 54 000 to 131 000.
-- A prediction takes 10 ms instead of 16 ms.
+- A prediction takes 6 ms instead of 16 ms.
 - A refit takes 4–7 s instead of 58 s.
 
 The speed-up grows with the length of the run, because CAMB runs less
 and less often once the emulator has learned the posterior.
+
+Starting from a trained emulator (the hour above), 20 minutes:
+
+| | 1 process | 4 processes (`processes: 4`) |
+|---|---|---|
+| MCMC steps | 10 080 | 26 880 |
+| CAMB calls (first process) | 93 | 40 |
+| `R - 1` | 13.9 | **0.026** |
+| `|Δ ln L|` vs CAMB, max | 0.016 | 0.011 |
+
+Several processes share their points through `training_file`, so give
+it whenever a run has more than one.

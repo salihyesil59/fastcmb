@@ -67,6 +67,20 @@ def test_checks_measure_the_error():
     assert stats["check_error_max"] < 3 * emulator.tolerance
 
 
+def test_checks_grow_rarer_while_they_pass():
+
+    emulator = CMBEmulator(toy_oracle, lmax=LMAX, min_train=15, check_every=2)
+
+    for p in _points(200, seed=3):
+        emulator(p)
+
+    stats = emulator.stats()
+    # Every 2 predictions would be about 80 checks; doubling up to 20, far fewer.
+    assert stats["emulated"] > 150
+    assert 3 <= stats["checks"] < 20
+    assert emulator._check_interval == 20
+
+
 def test_a_point_the_oracle_cannot_compute_is_none_and_not_learned():
 
     emulator = CMBEmulator(toy_oracle, lmax=LMAX)

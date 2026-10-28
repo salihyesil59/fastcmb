@@ -47,6 +47,7 @@ def main():
     parser.add_argument("--output", default=None)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--processes", type=int, default=1)
     args = parser.parse_args()
 
     warnings.simplefilter("ignore")
@@ -74,7 +75,8 @@ def main():
         "theory": {"background": None, "fastcmb": options},
         "likelihood": LIKELIHOODS,
         "params": params,
-        "sampler": {"mcmc": {"chains": 4, "Rminus1_stop": args.Rminus1, "max_time": args.max_time}},
+        "sampler": {"mcmc": {"chains": 4, "Rminus1_stop": args.Rminus1, "max_time": args.max_time,
+                              "processes": args.processes}},
     }
     if args.output:
         info["output"] = args.output
@@ -115,6 +117,9 @@ def main():
     print()
     print(f"converged: {products['converged']}, R-1 = {products['Rminus1']:.4f}, "
           f"acceptance {products['acceptance']}")
+    print(f"samples in the chains: {len(products['samples'])} (after skipping 30%)")
+    if args.processes > 1:
+        print("(the counts below are the first process's)")
     print(f"evaluations: {evaluations} (CAMB {stats['camb']}, emulated {stats['emulated']}), "
           f"training points {stats['training_points']}, checks {stats['checks']} "
           f"(median error {stats['check_error_median']}, max {stats['check_error_max']})")

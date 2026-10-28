@@ -78,9 +78,12 @@ class CMBEmulator:
         As :class:`~fastcmb.online.OnlineEmulator`'s ``min_train``,
         ``retrain_fraction``, ``max_train`` and ``path``.
     check_every : int
-        Every this many predictions, the oracle runs as well and the
+        After this many predictions, the oracle runs as well and the
         error is measured; a prediction off by more than three times
-        the tolerance is learned. 0 never.
+        the tolerance is learned. 0 never. While the checks find the
+        error within the tolerance, the interval between them doubles,
+        up to ten times ``check_every``; a check that does not brings
+        it back.
     """
 
     def __init__(self, oracle: Callable | None = None, lmax: int | None = None,
@@ -104,6 +107,8 @@ class CMBEmulator:
         self.n_oracle = 0
         self.n_emulated = 0
         self.check_errors: list[float] = []
+        self._check_interval = self.check_every
+        self._next_check = self.check_every
 
     # ---------------------------------------------------------
 
@@ -149,18 +154,26 @@ class CMBEmulator:
 
         self.n_emulated += 1
 
-        if not (self.check_every and self.n_emulated % self.check_every == 0):
+        if not (self.check_every and self.n_emulated >= self._next_check):
             Cl, sigma8, sigma8_cb = from_blocks(prediction.blocks, online.lmax)
             return Result(Cl, sigma8, sigma8_cb, emulated=True, error=prediction.error)
 
         # A check: the oracle too, and the error measured.
         result = self._run(oracle, params, x, learn=False)
+        self._next_check = self.n_emulated + self._check_interval
 
         if result is not None:
 
             truth = to_blocks(result.Cl, result.sigma8, result.sigma8_cb)
             error = online.error_between(prediction.blocks, truth)
             self.check_errors.append(error)
+
+            # Checks grow rarer while they pass.
+            if error <= self.tolerance:
+                self._check_interval = min(2 * self._check_interval, 10 * self.check_every)
+            else:
+                self._check_interval = self.check_every
+                self._next_check = self.n_emulated + self._check_interval
 
             if error > 3.0 * self.tolerance:
                 log.warning(

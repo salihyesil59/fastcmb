@@ -239,6 +239,12 @@ class GP:
 
         self.kernels = [(j, _Kernel(theta(j, [j], np.ones(1)), X, R[:, [j]])) for j in own]
 
+        # Every kernel's inverse squared length scales, stacked, so that
+        # :meth:`mean` computes all the kernel vectors in one product.
+        self._inv_ell2 = np.array([k.inv_ell ** 2 for k in [self.shared] + [k for _, k in self.kernels]])
+        self._own_alpha = np.array([k.alpha[:, 0] for _, k in self.kernels]).reshape(len(own), n).T
+        self._own = np.array(own, dtype=int)
+
         return self
 
     # ---------------------------------------------------------
@@ -271,17 +277,16 @@ class GP:
 
         x = np.asarray(x, dtype=float)
 
-        k_shared = self.shared.covariance(self.X, x)
-        mean = k_shared @ self.shared.alpha
+        # All the kernels' vectors at once: (n, 1 + own).
+        K = np.exp(-0.5 * (((self.X - x) ** 2) @ self._inv_ell2.T))
 
-        ks = []
+        mean = K[:, 0] @ self.shared.alpha
+        if self._own.size:
+            mean[self._own] = (K[:, 1:] * self._own_alpha).sum(0)
+
+        ks = list(K[:, 1:].T)
         if self.shared_columns:
-            ks.append(k_shared)
-
-        for j, kernel in self.kernels:
-            k = kernel.covariance(self.X, x)
-            mean[j] = k @ kernel.alpha[:, 0]
-            ks.append(k)
+            ks.insert(0, K[:, 0])
 
         return _design(x, self.degree)[0] @ self.beta + mean, ks
 
