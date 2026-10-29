@@ -51,3 +51,6 @@ htmlcov/
 
 # pytest
 .pytest_cache/
+
+# Benchmark runs
+runs/

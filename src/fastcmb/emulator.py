@@ -48,6 +48,10 @@ class Result:
     emulated: bool
     #: The predicted ``ln L`` error, when there was a prediction.
     error: float | None = None
+    #: Whether this is a prediction above the tolerance, given because
+    #: the call allowed it (``loose_tolerance``): good enough to tell
+    #: that a point is far worse than another, not to be kept.
+    approximate: bool = False
 
 
 class CMBEmulator:
@@ -106,6 +110,8 @@ class CMBEmulator:
 
         self.n_oracle = 0
         self.n_emulated = 0
+        #: Predictions given as approximate (see :meth:`__call__`).
+        self.n_approximate = 0
         self.check_errors: list[float] = []
         self._check_interval = self.check_every
         self._next_check = self.check_every
@@ -131,8 +137,18 @@ class CMBEmulator:
 
         return self.online
 
-    def __call__(self, params: dict, oracle: Callable | None = None) -> Result | None:
-        """The spectra at ``params``; ``None`` if the oracle cannot compute them."""
+    def __call__(self, params: dict, oracle: Callable | None = None,
+                 loose_tolerance: float | None = None) -> Result | None:
+        """
+        The spectra at ``params``; ``None`` if the oracle cannot compute them.
+
+        With ``loose_tolerance``, a prediction whose error is above the
+        tolerance but below this is returned, marked ``approximate``,
+        instead of running the oracle. A sampler uses it to reject,
+        without the oracle, a point the prediction already shows to be
+        far worse than the current one; one it might accept, it asks
+        for again without.
+        """
 
         oracle = oracle or self.oracle
         if oracle is None:
@@ -148,6 +164,20 @@ class CMBEmulator:
             and prediction.error <= self.tolerance
             and prediction.scalar_error <= self.sigma8_tolerance
         )
+
+        if not trusted and loose_tolerance is not None and prediction is not None:
+
+            # The error above was bounded, stopping early; the exact
+            # one may be lower.
+            prediction = online.predict(x)
+            trusted = (prediction.error <= self.tolerance
+                       and prediction.scalar_error <= self.sigma8_tolerance)
+
+            if not trusted and prediction.error <= loose_tolerance:
+                self.n_approximate += 1
+                Cl, sigma8, sigma8_cb = from_blocks(prediction.blocks, online.lmax)
+                return Result(Cl, sigma8, sigma8_cb, emulated=True, error=prediction.error,
+                              approximate=True)
 
         if not trusted:
             return self._run(oracle, params, x, learn=True)
@@ -210,6 +240,7 @@ class CMBEmulator:
         return {
             "oracle": self.n_oracle,
             "emulated": self.n_emulated,
+            "approximate": self.n_approximate,
             "training_points": 0 if self.online is None else self.online.size,
             "checks": errors.size,
             "check_error_median": float(np.median(errors)) if errors.size else None,

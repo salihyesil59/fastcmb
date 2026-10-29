@@ -81,6 +81,33 @@ def test_checks_grow_rarer_while_they_pass():
     assert emulator._check_interval == 20
 
 
+def test_loose_tolerance_gives_an_approximate_answer_without_the_oracle():
+
+    # The toy's errors are tiny; a tolerance below the far point's.
+    emulator = CMBEmulator(toy_oracle, lmax=LMAX, min_train=15, check_every=0, tolerance=1e-5)
+
+    for p in _points(30, seed=4):
+        emulator(p)
+
+    far = {"a": 3.0, "b": 3.0}
+    oracle_calls, size = emulator.n_oracle, emulator.online.size
+
+    approximate = emulator(far, loose_tolerance=1e9)
+    assert approximate.approximate and approximate.emulated
+    assert approximate.error > emulator.tolerance
+    assert (emulator.n_oracle, emulator.online.size) == (oracle_calls, size)
+    assert emulator.stats()["approximate"] == 1
+
+    # Not allowed one, the oracle runs and the point is learned.
+    exact = emulator(far)
+    assert not exact.approximate and not exact.emulated
+    assert emulator.online.size == size + 1
+
+    # Within the tolerance, the answer is not approximate.
+    near = emulator(_points(1, seed=4)[0], loose_tolerance=1e9)
+    assert near.emulated and not near.approximate
+
+
 def test_a_point_the_oracle_cannot_compute_is_none_and_not_learned():
 
     emulator = CMBEmulator(toy_oracle, lmax=LMAX)

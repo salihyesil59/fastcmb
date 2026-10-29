@@ -35,6 +35,13 @@ PLANCK = {
 
 LIKELIHOODS = {"cmb.planck_lite": None, "cmb.planck_lowe": None, "cmb.planck_lensing": None}
 
+#: A dark sector beyond LCDM: its parameters, as (prior min, max, ref mean, sigma).
+DARK_ENERGY = {
+    "lcdm": {},
+    "cpl": {"w0": (-3.0, 1.0, -0.8, 0.1), "wa": (-3.0, 2.0, -0.6, 0.3)},
+    "ede": {"f_ede": (0.0, 0.3, 0.05, 0.02), "z_c": (1000.0, 10000.0, 3500.0, 500.0)},
+}
+
 
 def main():
 
@@ -48,6 +55,9 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--processes", type=int, default=1)
+    parser.add_argument("--dark-energy", choices=sorted(DARK_ENERGY), default="lcdm")
+    parser.add_argument("--bao", action="store_true", help="add DESI BAO")
+    parser.add_argument("--covmat", default=None, help="proposal covariance to start from")
     args = parser.parse_args()
 
     warnings.simplefilter("ignore")
@@ -67,16 +77,25 @@ def main():
                   "proposal": 0.0025},
     )
 
+    for name, (lo, hi, mean, sigma) in DARK_ENERGY[args.dark_energy].items():
+        params[name] = {"prior": {"min": lo, "max": hi},
+                        "ref": {"dist": "norm", "loc": mean, "scale": sigma}, "proposal": sigma}
+
+    likelihoods = dict(LIKELIHOODS, **({"bao.desi": None} if args.bao else {}))
+    background = None if args.dark_energy == "lcdm" else {"dark_energy": args.dark_energy}
+    # BAO needs r_d, from the early-universe theory.
+    theories = {"background": background, **({"early_universe": None} if args.bao else {})}
+
     options = {"tolerance": args.tolerance}
     if args.training_file:
         options["training_file"] = args.training_file
 
     info = {
-        "theory": {"background": None, "fastcmb": options},
-        "likelihood": LIKELIHOODS,
+        "theory": {**theories, "fastcmb": options},
+        "likelihood": likelihoods,
         "params": params,
         "sampler": {"mcmc": {"chains": 4, "Rminus1_stop": args.Rminus1, "max_time": args.max_time,
-                              "processes": args.processes}},
+                              "processes": args.processes, "covmat": args.covmat}},
     }
     if args.output:
         info["output"] = args.output
@@ -95,8 +114,8 @@ def main():
 
     # CAMB's time per point, at points of the chain -- with the same
     # parameters as the chain's (A_planck sampled, not fixed).
-    slow = get_model({"theory": {"background": None, "camb": None},
-                      "likelihood": LIKELIHOODS, "params": params})
+    slow = get_model({"theory": {**theories, "camb": None},
+                      "likelihood": likelihoods, "params": params})
     rng = np.random.default_rng(1)
     samples, weights = products["samples"], products["weights"]
     picks = rng.choice(len(samples), size=args.validate, p=weights / weights.sum())
@@ -123,6 +142,9 @@ def main():
     print(f"evaluations: {evaluations} (CAMB {stats['camb']}, emulated {stats['emulated']}), "
           f"training points {stats['training_points']}, checks {stats['checks']} "
           f"(median error {stats['check_error_median']}, max {stats['check_error_max']})")
+    if "screened" in products:
+        out, inside = products["screened"]
+        print(f"slow proposals screened: {out} rejected approximately, {inside} then computed exactly")
     print(f"wall time {wall / 60:.1f} min; CAMB at every evaluation: "
           f"{evaluations * t_camb / 60:.1f} min ({t_camb:.2f} s/point) -> {evaluations * t_camb / wall:.1f}x")
     print(f"|Delta ln L| vs CAMB on {diffs.size} chain points: median {np.median(diffs):.4f}, "
