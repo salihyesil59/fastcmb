@@ -36,10 +36,12 @@ PLANCK = {
 LIKELIHOODS = {"cmb.planck_lite": None, "cmb.planck_lowe": None, "cmb.planck_lensing": None}
 
 #: A dark sector beyond LCDM: its parameters, as (prior min, max, ref mean, sigma).
+#: ``log10_x`` is sampled and gives the sector ``x = 10**log10_x``.
 DARK_ENERGY = {
     "lcdm": {},
     "cpl": {"w0": (-3.0, 1.0, -0.8, 0.1), "wa": (-3.0, 2.0, -0.6, 0.3)},
-    "ede": {"f_ede": (0.0, 0.3, 0.05, 0.02), "z_c": (1000.0, 10000.0, 3500.0, 500.0)},
+    # z_c over 1000-10000, uniform in its logarithm.
+    "ede": {"f_ede": (0.0, 0.3, 0.01, 0.005), "log10_z_c": (3.0, 4.0, 3.5, 0.1)},
 }
 
 
@@ -80,6 +82,9 @@ def main():
     for name, (lo, hi, mean, sigma) in DARK_ENERGY[args.dark_energy].items():
         params[name] = {"prior": {"min": lo, "max": hi},
                         "ref": {"dist": "norm", "loc": mean, "scale": sigma}, "proposal": sigma}
+        if name.startswith("log10_"):
+            params[name]["drop"] = True
+            params[name[len("log10_"):]] = f"lambda {name}: 10 ** {name}"
 
     likelihoods = dict(LIKELIHOODS, **({"bao.desi": None} if args.bao else {}))
     background = None if args.dark_energy == "lcdm" else {"dark_energy": args.dark_energy}
