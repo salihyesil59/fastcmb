@@ -171,3 +171,21 @@ Starting from a trained emulator (the hour above), 20 minutes:
 
 Several processes share their points through `training_file`, so give
 it whenever a run has more than one.
+
+## Analyses
+
+[`analysis/cpl_vs_lcdm/`](analysis/cpl_vs_lcdm/) fits ΛCDM and CPL
+(`w0`, `wa`) with CosmoFit to the full Planck 2018 likelihoods (plik_lite,
+lowE, lensing), DESI DR2 BAO, cosmic chronometers and, in turn, Pantheon+,
+Union3 and DES-SN5YR: six runs to `R - 1 < 0.01`, all six ΛCDM parameters
+sampled. The notebook compares the models (Δχ², AIC, BIC), shows which data
+carry the signal, and checks the emulator against CAMB.
+
+| | Pantheon+ | Union3 | DES-SN5YR (Dovekie) |
+|---|---|---|---|
+| `w0` | −0.843 ± 0.054 | −0.677 ± 0.090 | −0.809 ± 0.056 |
+| `wa` | −0.59 ± 0.20 | −1.04 ± 0.30 | −0.70 ± 0.22 |
+| preference for CPL | 2.6σ | 3.5σ | 3.1σ |
+
+Each run took 15–52 min. CAMB ran at 272 (ΛCDM) and 642 (CPL) points
+over all six runs, and `|Δ ln L|` against CAMB is at most 0.015.
