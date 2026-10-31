@@ -25,7 +25,6 @@ from cobaya.theory import Theory
 from .camb_oracle import CAMBOracle
 from .emulator import CMBEmulator
 
-
 __all__ = ["FastCAMB"]
 
 _INPUTS = ("H0", "cosmomc_theta", "theta_MC_100", "ombh2", "omch2", "omk", "mnu", "nnu",

@@ -55,6 +55,26 @@ def test_learns_then_answers_from_the_emulator():
         assert set(result.Cl) == set(truth["Cl"])
 
 
+def test_a_spectrum_that_does_not_change_is_predicted_by_its_mean():
+
+    def oracle(p):
+        # The TE correlation does not depend on the parameters.
+        out = toy_oracle({**p, "b": 0.0})
+        out["Cl"]["tt"] = out["Cl"]["tt"] * (1 + 0.1 * p["b"])
+        out["Cl"]["te"] = out["Cl"]["te"] * np.sqrt(1 + 0.1 * p["b"])
+        return out
+
+    emulator = CMBEmulator(oracle, lmax=LMAX, min_train=15, check_every=0)
+
+    for p in _points(60, seed=0):
+        emulator(p)
+
+    p = _points(1, seed=1)[0]
+    result = emulator(p)
+    assert result.emulated
+    assert result.Cl["te"][2:] == pytest.approx(oracle(p)["Cl"]["te"][2:], rel=1e-3)
+
+
 def test_checks_measure_the_error():
 
     emulator = CMBEmulator(toy_oracle, lmax=LMAX, min_train=15, check_every=5)

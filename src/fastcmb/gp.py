@@ -23,7 +23,6 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve, solve_triangular
 from scipy.optimize import minimize
 
-
 __all__ = ["GP"]
 
 #: Bounds on the log length scales (inputs are standardized) and on the
@@ -163,7 +162,7 @@ class GP:
         #: ``"shared"`` and one per output with a kernel of its own.
         self.theta: dict = {}
 
-    def fit(self, X, Y, optimize: bool = True, weights=None) -> "GP":
+    def fit(self, X, Y, optimize: bool = True, weights=None) -> GP:
         """
         ``X`` is ``(n, d)``, standardized; ``Y`` is ``(n, m)``.
 

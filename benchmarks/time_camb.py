@@ -5,7 +5,6 @@ import time
 import warnings
 
 import numpy as np
-
 from cosmofit.core import get_model
 
 PLANCK = {"H0": 67.36, "Omega_m": 0.3153, "Omega_b": 0.02237 / 0.6736 ** 2, "m_nu": 0.06}

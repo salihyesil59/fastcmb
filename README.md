@@ -25,9 +25,14 @@ are available:
 ## Install
 
 ```bash
-pip install -e ".[camb]"     # with CAMB as the oracle
-pip install -e ".[cobaya]"   # and the cobaya theory
+pip install "fastcmb[camb]"      # with CAMB as the oracle
+pip install "fastcmb[cobaya]"    # and the cobaya theory
+pip install "cosmofit[fast]"     # CosmoFit, with fastcmb and CAMB
 ```
+
+The emulator alone (`pip install fastcmb`) needs only numpy and scipy;
+the oracle is then a code of your own. From a clone, `pip install -e ".[dev]"`
+installs the tests' dependencies as well.
 
 ## Use
 
@@ -54,6 +59,16 @@ result.Cl["tt"], result.Cl["pp"], result.sigma8, result.emulated
 Any code can serve as the oracle. It is a function that takes a
 parameter dict and returns `{"Cl": ..., "sigma8": ..., "sigma8_cb": ...}`
 in these conventions, or `None` when the point cannot be computed.
+`CAMBOracle` takes the parameters as cobaya names them (`H0` or
+`cosmomc_theta`, `ombh2`, `omch2`, `ln1e10As`/`logA` or `As`, `ns`, `tau`,
+and optionally `mnu`, `nnu`, `omk`, `w`, `wa`).
+
+`emulator(params, loose_tolerance=1.0)` also answers with a prediction
+whose error is above the tolerance but below 1, marked
+`result.approximate`. A sampler can use it to reject a proposal that is
+clearly worse than the current point without running the code, and ask
+again without `loose_tolerance` for one it might accept. CosmoFit's MCMC
+does this with `screen: true`.
 
 ### cobaya
 
@@ -86,7 +101,11 @@ theory:
     training_file: chains/emu/lcdm
 ```
 
-The theory takes every `camb` option and parameter.
+The theory takes every `camb` option and parameter, and dark sectors
+beyond ΛCDM: CPL and other dark energies, early dark energy, and
+Hu–Sawicki f(R) when CAMB is MGCAMB. Their parameters become inputs of
+the emulator, together with the distance to last scattering, along which
+they trade off against `h`.
 
 ## Options
 
@@ -95,6 +114,7 @@ The theory takes every `camb` option and parameter.
 | `tolerance` | 0.05 | largest predicted `ln L` error the emulator answers with |
 | `sigma8_tolerance` | 1e-3 | largest predicted relative error of `sigma8` |
 | `min_train` | 30 | points computed by the code before the first fit |
+| `retrain_fraction` | 0.1 | refit once the new points are this fraction of those fitted on |
 | `max_train` | 800 | most points fitted on (the latest) |
 | `training_file` | none | keeps the points, so parallel chains and later runs share them |
 | `check_every` | 200 | after N predictions the code runs as well, to measure the error; the interval doubles while checks pass, up to 10 N |
@@ -167,14 +187,33 @@ Starting from a trained emulator (the hour above), 20 minutes:
 | MCMC steps | 10 080 | 26 880 |
 | CAMB calls (first process) | 93 | 40 |
 | `R - 1` | 13.9 | **0.026** |
-| `|Δ ln L|` vs CAMB, max | 0.016 | 0.011 |
+| `\|Δ ln L\|` vs CAMB, max | 0.016 | 0.011 |
 
 Several processes share their points through `training_file`, so give
 it whenever a run has more than one.
 
+### Beyond ΛCDM
+
+The same chain with a dark sector, through CosmoFit (`--dark-energy`
+`cpl`, `ede` or `hu_sawicki`; `--bao` adds DESI BAO), 4 processes sharing
+a training file, run until `R - 1 < 0.02`:
+
+| | CPL + DESI BAO | EDE | Hu–Sawicki f(R) |
+|---|---|---|---|
+| sampled beyond ΛCDM | `w0`, `wa` | `f_ede`, `log10 z_c` | `log10 \|f_R0\|` |
+| wall time | 33 min | 39 min | 59 min |
+| `R - 1` | 0.019 | 0.019 | 0.016 |
+| code calls / evaluations, per process | 133 / 18 044 | 426 / 20 201 | 157 / 5 688 |
+| `\|Δ ln L\|` vs the code, median / max | — | 0.015 / 0.10 | 0.003 / 0.032 |
+| speed-up | — | 8.6× | 8.3× |
+
+f(R) runs through MGCAMB, roughly ten times slower than CAMB per point.
+The CPL run was not re-checked against CAMB point by point; the analysis
+below does that for CPL with more data.
+
 ## Analyses
 
-[`analysis/cpl_vs_lcdm/`](analysis/cpl_vs_lcdm/) fits ΛCDM and CPL
+[`analysis/cpl_vs_lcdm/`](https://github.com/salihyesil59/fastcmb/tree/main/analysis/cpl_vs_lcdm) fits ΛCDM and CPL
 (`w0`, `wa`) with CosmoFit to the full Planck 2018 likelihoods (plik_lite,
 lowE, lensing), DESI DR2 BAO, cosmic chronometers and, in turn, Pantheon+,
 Union3 and DES-SN5YR: six runs to `R - 1 < 0.01`, all six ΛCDM parameters

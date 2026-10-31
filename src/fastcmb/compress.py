@@ -21,8 +21,7 @@ from __future__ import annotations
 
 import numpy as np
 
-
-__all__ = ["BLOCKS", "PCA", "PCA_TOLERANCE", "to_blocks", "from_blocks"]
+__all__ = ["BLOCKS", "PCA", "PCA_TOLERANCE", "from_blocks", "to_blocks"]
 
 BLOCKS = ("tt", "te", "ee", "bb", "pp", "scalars")
 
@@ -125,8 +124,10 @@ class PCA:
         top = min(max_components, Vt.shape[0])
 
         # The fewest components that reproduce every training vector; the
-        # residual loses one component at a time.
+        # residual loses one component at a time. A block that has not
+        # varied keeps none: its mean is the prediction.
         residual = Z.copy()
+        k = 0
         for k in range(1, top + 1):
             residual -= np.outer(U[:, k - 1] * s[k - 1], Vt[k - 1])
             if np.abs(residual).max() >= tolerance:

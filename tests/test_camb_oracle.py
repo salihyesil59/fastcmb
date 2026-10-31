@@ -3,7 +3,7 @@ import pytest
 
 pytest.importorskip("camb")
 
-from fastcmb import CAMBOracle  # noqa: E402
+from fastcmb import CAMBOracle
 
 PLANCK = {"H0": 67.36, "ombh2": 0.02237, "omch2": 0.12, "ln1e10As": 3.044, "ns": 0.9649, "tau": 0.0544}
 

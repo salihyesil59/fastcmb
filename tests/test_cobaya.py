@@ -4,7 +4,7 @@ import pytest
 pytest.importorskip("camb")
 cobaya = pytest.importorskip("cobaya")
 
-from cobaya.model import get_model  # noqa: E402
+from cobaya.model import get_model
 
 PARAMS = {"H0": 67.36, "ombh2": 0.02237, "omch2": 0.12, "logA": 3.044, "ns": 0.9649,
           "tau": 0.0544, "mnu": 0.06, "nnu": 3.044}

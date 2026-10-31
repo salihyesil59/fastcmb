@@ -40,7 +40,7 @@ def test_interpolates_and_knows_where_it_does_not(separate):
     X, Y = _data(80)
     gp = GP(separate=separate).fit(X, Y)
 
-    mean, var = gp.predict(X[3])
+    mean, _ = gp.predict(X[3])
     assert mean == pytest.approx(Y[3], abs=1e-3 if separate == 3 else 1e-2)
 
     Xt, Yt = _data(50, seed=1)

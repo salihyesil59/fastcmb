@@ -18,8 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 
-
-__all__ = ["fisher_weights", "PLANCK"]
+__all__ = ["PLANCK", "fisher_weights"]
 
 _ARCMIN = np.pi / 180.0 / 60.0
 

@@ -19,7 +19,6 @@ import math
 
 import numpy as np
 
-
 __all__ = ["CAMBOracle"]
 
 _DEFAULTS = {"omk": 0.0, "mnu": 0.06, "nnu": 3.044, "w": -1.0, "wa": 0.0}
@@ -73,10 +72,10 @@ class CAMBOracle:
         pars = camb.CAMBparams()
 
         theta = p.get("cosmomc_theta", p.get("theta_MC_100"))
-        cosmology = dict(
-            ombh2=p["ombh2"], omch2=p["omch2"], omk=p["omk"], mnu=p["mnu"], nnu=p["nnu"],
-            num_massive_neutrinos=1 if p["mnu"] > 0 else 0, TCMB=self.TCMB, tau=p["tau"],
-        )
+        cosmology = {
+            "ombh2": p["ombh2"], "omch2": p["omch2"], "omk": p["omk"], "mnu": p["mnu"], "nnu": p["nnu"],
+            "num_massive_neutrinos": 1 if p["mnu"] > 0 else 0, "TCMB": self.TCMB, "tau": p["tau"],
+        }
 
         if theta is not None:
             pars.set_cosmology(cosmomc_theta=float(theta) / 100.0, **cosmology)

@@ -25,14 +25,13 @@ when it cannot compute the point.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 
 from .compress import from_blocks, to_blocks
 from .online import OnlineEmulator
-
 
 __all__ = ["CMBEmulator", "Result"]
 
@@ -103,8 +102,8 @@ class CMBEmulator:
         self.tolerance = float(tolerance)
         self.sigma8_tolerance = float(sigma8_tolerance)
         self.check_every = int(check_every)
-        self._options = dict(min_train=min_train, retrain_fraction=retrain_fraction,
-                             max_train=max_train, path=training_file)
+        self._options = {"min_train": min_train, "retrain_fraction": retrain_fraction,
+                         "max_train": max_train, "path": training_file}
 
         self.online: OnlineEmulator | None = None
 

@@ -12,11 +12,8 @@ import glob
 import warnings
 
 import numpy as np
-
-from cosmofit.core import get_model
-
 from chain import LIKELIHOODS, PLANCK
-
+from cosmofit.core import get_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("root")
@@ -27,7 +24,8 @@ args = parser.parse_args()
 warnings.simplefilter("ignore")
 
 files = sorted(glob.glob(args.root + ".[0-9]*.txt"))
-header = open(files[0]).readline().lstrip("#").split()
+with open(files[0]) as f:
+    header = f.readline().lstrip("#").split()
 chains = [np.loadtxt(f) for f in files]
 
 names = [c for c in header[2:] if c in PLANCK or c == "A_planck"]

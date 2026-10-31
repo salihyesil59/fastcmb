@@ -1,6 +1,8 @@
 """
-A real chain: CosmoFit's MCMC on Planck 2018 lite + lowE + lensing,
-LCDM, with ``fastcmb``. Then:
+A real chain: CosmoFit's MCMC on Planck 2018 lite + lowE + lensing
+(with ``--bao``, DESI BAO as well), with ``fastcmb``: LCDM, or with
+``--dark-energy`` a dark sector -- ``cpl``, ``ede`` or ``hu_sawicki``
+(f(R), which needs CAMB to be MGCAMB). Then:
 
 * the wall time, against what CAMB at every evaluation would have cost
   (CAMB's median time per point, measured here, times the evaluations);
@@ -8,6 +10,7 @@ LCDM, with ``fastcmb``. Then:
 * the posterior.
 
     python benchmarks/chain.py --Rminus1 0.02 --max-time 3600
+    python benchmarks/chain.py --dark-energy cpl --bao --processes 4 --training-file runs/emu/cpl
 """
 
 from __future__ import annotations
@@ -18,10 +21,8 @@ import time
 import warnings
 
 import numpy as np
-
-from cosmofit.core.run import run
-
 from cosmofit.core import get_model
+from cosmofit.core.run import run
 
 #: Planck 2018 TT,TE,EE+lowE+lensing: mean and sigma.
 PLANCK = {

@@ -4,22 +4,42 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastcmb"
-version = "0.2.0"
+dynamic = ["version"]
 description = "An online emulator of Boltzmann codes: CMB spectra in milliseconds, with the code as the fallback."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Salih Yeşil" }]
+keywords = ["cosmology", "CMB", "emulator", "Gaussian process", "CAMB", "MCMC", "Boltzmann code"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 dependencies = [
     "numpy>=2.0",
     "scipy",
 ]
 
+[project.urls]
+Homepage = "https://github.com/salihyesil59/fastcmb"
+Source = "https://github.com/salihyesil59/fastcmb"
+Issues = "https://github.com/salihyesil59/fastcmb/issues"
+
 [project.optional-dependencies]
 camb = ["camb>=1.5"]
 cobaya = ["cobaya>=3.5", "camb>=1.5"]
 dev = ["pytest", "camb>=1.5"]
+
+[tool.setuptools.dynamic]
+version = { attr = "fastcmb.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

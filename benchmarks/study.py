@@ -16,7 +16,6 @@ from fastcmb.compress import BLOCKS, from_blocks
 from fastcmb.metric import fisher_weights
 from fastcmb.online import OnlineEmulator
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("data")
 parser.add_argument("--train", type=int, default=200)
@@ -58,10 +57,10 @@ for i in range(args.train, n):
     m = e._model
     xs = (X[i][m["varying"]] - m["center"][m["varying"]]) / m["scale"][m["varying"]]
 
-    for b in actual:
+    for b, errors in actual.items():
         pca, gp, G = m["blocks"][b]
         _, var = gp.predict(xs)
-        actual[b].append(np.sqrt((p.blocks[b] - truth[b]) ** 2 @ F[b]))
+        errors.append(np.sqrt((p.blocks[b] - truth[b]) ** 2 @ F[b]))
         predicted[b].append(np.sqrt(var @ G) if G is not None else 0.0)
         r = pca.reconstruct(pca.project(truth[b])) - truth[b]
         pca_only[b].append(np.sqrt(r ** 2 @ F[b]))
@@ -71,8 +70,8 @@ for i in range(args.train, n):
 
 print(f"predict: {np.median(times) * 1e3:.2f} ms")
 print(f"{'block':8s} {'actual med':>11s} {'actual max':>11s} {'pred med':>9s} {'pca med':>9s}")
-for b in actual:
-    print(f"{b:8s} {np.median(actual[b]):11.4f} {np.max(actual[b]):11.4f} "
+for b, errors in actual.items():
+    print(f"{b:8s} {np.median(errors):11.4f} {np.max(errors):11.4f} "
           f"{np.median(predicted[b]):9.4f} {np.median(pca_only[b]):9.4f}")
 ta, tp = np.array(total_actual), np.array(total_pred)
 print(f"total    actual median {np.median(ta):.4f} max {ta.max():.4f}; predicted median {np.median(tp):.4f}")

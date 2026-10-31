@@ -27,7 +27,6 @@ from .compress import BLOCKS, PCA, from_blocks
 from .gp import GP
 from .metric import fisher_weights
 
-
 __all__ = ["OnlineEmulator", "Prediction"]
 
 log = logging.getLogger("fastcmb")
@@ -167,6 +166,12 @@ class OnlineEmulator:
         for b in BLOCKS:
 
             pca = PCA(Y[b], weights=F[b] if F[b] is not None and F[b].any() else None)
+
+            if pca.size == 0:
+                # Has not varied over the training set: its mean is the prediction.
+                model["blocks"][b] = (pca, None, None)
+                continue
+
             coefficients = pca.project(Y[b])
 
             # Weight of each component in ln L, per unit coefficient.
@@ -233,6 +238,10 @@ class OnlineEmulator:
         scalar_error = 0.0
 
         for b, (pca, gp, G) in m["blocks"].items():
+
+            if gp is None:
+                blocks[b] = pca.mean.copy()
+                continue
 
             mean, ks = gp.mean(xs)
             blocks[b] = pca.reconstruct(mean)

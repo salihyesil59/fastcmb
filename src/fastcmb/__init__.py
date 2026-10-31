@@ -18,6 +18,6 @@ from .emulator import CMBEmulator, Result
 from .gp import GP
 from .online import OnlineEmulator
 
-__all__ = ["CAMBOracle", "CMBEmulator", "GP", "OnlineEmulator", "Result", "__version__"]
+__all__ = ["GP", "CAMBOracle", "CMBEmulator", "OnlineEmulator", "Result", "__version__"]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

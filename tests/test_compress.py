@@ -30,3 +30,13 @@ def test_pca_keeps_what_the_tolerance_asks():
     pca = PCA(Y)
     assert pca.size <= 3
     assert np.abs(pca.reconstruct(pca.project(Y)) - Y).max() < 1e-3
+
+
+def test_a_block_that_has_not_varied_keeps_no_components():
+
+    # Values whose sums are exact, so that what the mean leaves is zero.
+    Y = np.tile(np.arange(49) / 8.0, (10, 1))
+
+    pca = PCA(Y)
+    assert pca.size == 0
+    assert pca.reconstruct(pca.project(Y)) == pytest.approx(Y)
