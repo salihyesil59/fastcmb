@@ -35,13 +35,19 @@ PLANCK = {
 
 LIKELIHOODS = {"cmb.planck_lite": None, "cmb.planck_lowe": None, "cmb.planck_lensing": None}
 
-#: A dark sector beyond LCDM: its parameters, as (prior min, max, ref mean, sigma).
-#: ``log10_x`` is sampled and gives the sector ``x = 10**log10_x``.
+#: A dark sector beyond LCDM: its sampled parameters as (prior min, max,
+#: ref mean, sigma); the sector's own, when sampled through others, as a
+#: lambda of them (which are then not handed to the sector); fixed ones
+#: as numbers.
 DARK_ENERGY = {
     "lcdm": {},
     "cpl": {"w0": (-3.0, 1.0, -0.8, 0.1), "wa": (-3.0, 2.0, -0.6, 0.3)},
     # z_c over 1000-10000, uniform in its logarithm.
-    "ede": {"f_ede": (0.0, 0.3, 0.01, 0.005), "log10_z_c": (3.0, 4.0, 3.5, 0.1)},
+    "ede": {"f_ede": (0.0, 0.3, 0.01, 0.005), "log10_z_c": (3.0, 4.0, 3.5, 0.1),
+            "z_c": "lambda log10_z_c: 10 ** log10_z_c"},
+    # Hu-Sawicki f(R), n = 1, uniform in log10 |f_R0|; needs MGCAMB as camb.
+    "hu_sawicki": {"log10_fR0": (-8.0, -3.0, -6.0, 0.5),
+                   "f_R0": "lambda log10_fR0: -10 ** log10_fR0", "n_hs": 1.0},
 }
 
 
@@ -79,12 +85,17 @@ def main():
                   "proposal": 0.0025},
     )
 
-    for name, (lo, hi, mean, sigma) in DARK_ENERGY[args.dark_energy].items():
+    sector = DARK_ENERGY[args.dark_energy]
+    lambdas = " ".join(spec for spec in sector.values() if isinstance(spec, str))
+    for name, spec in sector.items():
+        if not isinstance(spec, tuple):
+            params[name] = spec
+            continue
+        lo, hi, mean, sigma = spec
         params[name] = {"prior": {"min": lo, "max": hi},
-                        "ref": {"dist": "norm", "loc": mean, "scale": sigma}, "proposal": sigma}
-        if name.startswith("log10_"):
-            params[name]["drop"] = True
-            params[name[len("log10_"):]] = f"lambda {name}: 10 ** {name}"
+                        "ref": {"dist": "norm", "loc": mean, "scale": sigma}, "proposal": sigma,
+                        # Read only by a lambda: not the sector's own.
+                        **({"drop": True} if f"lambda {name}:" in lambdas else {})}
 
     likelihoods = dict(LIKELIHOODS, **({"bao.desi": None} if args.bao else {}))
     background = None if args.dark_energy == "lcdm" else {"dark_energy": args.dark_energy}
